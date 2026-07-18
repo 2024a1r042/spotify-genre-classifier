@@ -391,7 +391,6 @@ if lottie_music:
     st_lottie(lottie_music, height=120, key="music_anim")
 st.markdown("<br>", unsafe_allow_html=True)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# INPUT — Track Search
 # BUILD TRACK LIST FROM CSV
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 all_track_names = sorted(df['track_name'].dropna().unique().tolist())
@@ -401,14 +400,9 @@ all_track_names = sorted(df['track_name'].dropna().unique().tolist())
 st.markdown(
     '<div class="gc"><span class="ci">🎧</span>'
     '<p class="cl">Track Lookup</p>'
-    '<p class="ct">Search by Track Name</p></div>',
     '<p class="ct">Select a Track from the Catalog</p></div>',
     unsafe_allow_html=True,
 )
-track_name = st.text_input(
-    "Enter Track Name",
-    value="",
-    placeholder="e.g. Blinding Lights, Shape of You, Bohemian Rhapsody...",
 track_name = st.selectbox(
     "Select Track",
     options=[""] + all_track_names,
@@ -425,8 +419,6 @@ analyze_clicked = st.button("CLASSIFY GENRE")
 # INFERENCE
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 if analyze_clicked:
-    if not track_name.strip():
-        st.warning("🎵 Please enter a track name to classify.")
     if not track_name or not track_name.strip():
         st.warning("🎵 Please select a track from the dropdown to classify.")
     else:
@@ -441,8 +433,6 @@ if analyze_clicked:
             ph.markdown('<p class="stg">' + txt + '</p>', unsafe_allow_html=True)
             time.sleep(wait)
         ph.empty()
-        # Look up the track
-        match = df[df['track_name'].str.lower() == track_name.strip().lower()]
         # Look up the track — exact match (guaranteed from dropdown)
         match = df[df['track_name'] == track_name.strip()]
         # Fallback: case-insensitive match
@@ -461,7 +451,6 @@ if analyze_clicked:
                 st_lottie(lottie_ok, height=150, speed=1.2, key="ok_vfx")
             # Render result card
             st.markdown(
-                build_result(str(prediction), track_name, track_data),
                 build_result(str(prediction), matched_name, track_data),
                 unsafe_allow_html=True,
             )
@@ -480,8 +469,6 @@ if analyze_clicked:
                 '<hr class="rdiv">'
                 '<p class="rdesc">The track <strong>&ldquo;' + str(track_name) + '&rdquo;</strong> '
                 'was not found in our Spotify metadata catalog. '
-                'Please verify the exact track name and try again. '
-                'Names must match the catalog entry precisely.</p>'
                 'Please verify the exact track name and try again.</p>'
                 '</div>',
                 unsafe_allow_html=True,
