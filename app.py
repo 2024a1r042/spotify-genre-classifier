@@ -392,17 +392,28 @@ if lottie_music:
 st.markdown("<br>", unsafe_allow_html=True)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # INPUT — Track Search
+# BUILD TRACK LIST FROM CSV
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+all_track_names = sorted(df['track_name'].dropna().unique().tolist())
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# INPUT — Track Search (Dropdown from catalog)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 st.markdown(
     '<div class="gc"><span class="ci">🎧</span>'
     '<p class="cl">Track Lookup</p>'
     '<p class="ct">Search by Track Name</p></div>',
+    '<p class="ct">Select a Track from the Catalog</p></div>',
     unsafe_allow_html=True,
 )
 track_name = st.text_input(
     "Enter Track Name",
     value="",
     placeholder="e.g. Blinding Lights, Shape of You, Bohemian Rhapsody...",
+track_name = st.selectbox(
+    "Select Track",
+    options=[""] + all_track_names,
+    index=0,
+    format_func=lambda x: "🔍  Type to search tracks..." if x == "" else x,
     label_visibility="collapsed",
 )
 st.markdown("<br>", unsafe_allow_html=True)
@@ -416,6 +427,8 @@ analyze_clicked = st.button("CLASSIFY GENRE")
 if analyze_clicked:
     if not track_name.strip():
         st.warning("🎵 Please enter a track name to classify.")
+    if not track_name or not track_name.strip():
+        st.warning("🎵 Please select a track from the dropdown to classify.")
     else:
         # Processing stages
         ph = st.empty()
@@ -430,8 +443,17 @@ if analyze_clicked:
         ph.empty()
         # Look up the track
         match = df[df['track_name'].str.lower() == track_name.strip().lower()]
+        # Look up the track — exact match (guaranteed from dropdown)
+        match = df[df['track_name'] == track_name.strip()]
+        # Fallback: case-insensitive match
+        if match.empty:
+            match = df[df['track_name'].str.lower() == track_name.strip().lower()]
+        # Fallback: partial / contains match
+        if match.empty:
+            match = df[df['track_name'].str.lower().str.contains(track_name.strip().lower(), na=False)]
         if not match.empty:
             track_data = match.iloc[[0]]
+            matched_name = track_data['track_name'].values[0]
             prediction = model.predict(track_data)[0]
             # Success animation
             lottie_ok = load_lottieurl("https://lottie.host/80c436ab-6b08-45ec-b91c-7f51be0ccf5d/c3qCgQ2fCc.json")
@@ -440,6 +462,7 @@ if analyze_clicked:
             # Render result card
             st.markdown(
                 build_result(str(prediction), track_name, track_data),
+                build_result(str(prediction), matched_name, track_data),
                 unsafe_allow_html=True,
             )
         else:
@@ -459,6 +482,7 @@ if analyze_clicked:
                 'was not found in our Spotify metadata catalog. '
                 'Please verify the exact track name and try again. '
                 'Names must match the catalog entry precisely.</p>'
+                'Please verify the exact track name and try again.</p>'
                 '</div>',
                 unsafe_allow_html=True,
             )
